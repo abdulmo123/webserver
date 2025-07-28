@@ -1,3 +1,4 @@
+I. Part 1
 web server = networking server that sits on a physical server
     - waits for a request from client -> receives a request -> generates a response -> sends back to client
 
@@ -20,3 +21,14 @@ web server = networking server that sits on a physical server
     - how client and server establish a TCP connection BEFORE sending HTTP requests/responses?
         -- use 'SOCKETS'
         -- in this ex: simulate browser manually by using telnet on cmd
+
+
+    - how webserver works ...
+        -- web server creates listening socket and starts accepting new connections in a loop
+        -- client initiates a TCP connection, after successfully establishing it, client sends HTTP request to server
+        -- server responds with HTTP response that gets displayed to user
+        -- to establish TCP connection, client & servers use 'sockets'
+
+II. Part 2 
+Python Web Server Gate Interface (WSGI) -- pronounced 'wizgy' ...
+- solves problem of being able to run web server with multiple web frameworks
