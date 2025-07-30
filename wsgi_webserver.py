@@ -99,3 +99,36 @@ class WSGIServer(object):
         env['SERVER_PORT'] = str(self.server_port)  # 8888
 
         return env
+    
+
+    def start_response(self, status, response_headers, exc_info=None):
+        # add nec. server headers
+        server_headers = [
+            ('Date', 'Tue, 29 July 00:00:00 GMT'),
+            ('Server', 'WSGIServer 0.2'),
+        ]
+
+        self.headers_set = [status, response_headers + server_headers]
+        
+        # to adhere to WSGI specification the start_response must return a 'write' callable
+        # return self.finish_response
+    
+    
+    def finish_response(self, result):
+        try:
+            status, response_headers = self.headers_set
+            response = f'HTTP/1.1 {status}\r\n'
+            for header in response_headers:
+                response += '{0}: {1}\r\n'.format(*header)
+            response += '\r\n'
+            for data in result:
+                response += data.decode('utf-8')
+            # print formatted response data
+            print(''. join(
+                f'> {line}\n' for line in response.splitlines()
+            ))
+            response_bytes = response.encode()
+            self.client_connection.sendall(response_bytes)
+        finally:
+            self.client_connection.close()
+    
