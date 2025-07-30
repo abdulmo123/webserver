@@ -131,4 +131,23 @@ class WSGIServer(object):
             self.client_connection.sendall(response_bytes)
         finally:
             self.client_connection.close()
-    
+
+
+SERVER_ADDRESS = (HOST, PORT) = '', 8888
+
+def create_server(server_address, app):
+    server = WSGIServer(server_address)
+    server.set_app(app)
+    return server
+
+
+if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        sys.exit('Provide a WSGI app object as module:callable')
+    app_path = sys.argv[1]
+    module, app = app_path.split(':')
+    module = __import__(module)
+    app = getattr(module, app)
+    httpd = create_server(SERVER_ADDRESS, app)
+    print(f'WSGIServer: Serving HTTP on port {PORT} ... \n')
+    httpd.server_forever()
