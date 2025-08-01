@@ -50,7 +50,7 @@ class WSGIServer(object):
 
     def handle_one_request(self):
         request_data = self.client_connection.recv(1024)
-        self.request_data = request_data = request_data.encode('utf-8')
+        self.request_data = request_data = request_data.decode('utf-8')
 
         # print formatted request data a la 'curl -v'
         print(''.join(
@@ -150,4 +150,4 @@ if __name__ == '__main__':
     app = getattr(module, app)
     httpd = create_server(SERVER_ADDRESS, app)
     print(f'WSGIServer: Serving HTTP on port {PORT} ... \n')
-    httpd.server_forever()
+    httpd.serve_forever()
