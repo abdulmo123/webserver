@@ -2,40 +2,34 @@ import io
 import socket
 import sys
 
+
 class WSGIServer(object):
 
     address_family = socket.AF_INET
     socket_type = socket.SOCK_STREAM
     request_queue_size = 1
 
-    def __init__ (self, server_address):
+    def __init__(self, server_address):
         # create a listening socket
         self.listen_socket = listen_socket = socket.socket(
             self.address_family,
             self.socket_type
         )
-
-        # allow to reuse same address
+        # allow to reuse the same address
         listen_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        
-        # bind 
+        # bind
         listen_socket.bind(server_address)
-
-        # activate 
+        # activate
         listen_socket.listen(self.request_queue_size)
-
-        # Get server host name and port
+        # get server host name and port
         host, port = self.listen_socket.getsockname()[:2]
         self.server_name = socket.getfqdn(host)
         self.server_port = port
-
-        # return headers set by web framework/web app
+        # return headers set by Web framework/Web application
         self.headers_set = []
 
-    
-    def set_app(self, app):
-        self.app = app
-    
+    def set_app(self, application):
+        self.application = application
 
     def serve_forever(self):
         listen_socket = self.listen_socket
@@ -61,59 +55,59 @@ class WSGIServer(object):
 
         # construct env dict using request data
         env = self.get_environ()
-    
-        # time to call our app callable and
-        # get back result that will become HTTP resp body
-        result = self.app(env, self.start_response)
 
-        # construct response and send it back to client
+        # time to call our application callable and get
+        # back a result that will become HTTP response body
+        result = self.application(env, self.start_response)
+
+        # Construct a response and send it back to the client
         self.finish_response(result)
 
 
     def parse_request(self, text):
         request_line = text.splitlines()[0]
         request_line = request_line.rstrip('\r\n')
-
-        # break down the request into components
-        (self.request_method,   # GET
-         self.path,             # /hello
-         self.request_version   # HTTP/1.1
+        # Break down the request line into components
+        (self.request_method,  # GET
+         self.path,            # /hello
+         self.request_version  # HTTP/1.1
          ) = request_line.split()
-        
-    
+
     def get_environ(self):
         env = {}
-        #  required WSGI variables
-        env['wsgi.version'] = (1,0)
-        env['wsgi.url_schem'] = 'http'
-        env['wsgi.input'] = io.StringIO(self.request_data)
-        env['wsgi.errors'] = sys.stderr
-        env['wsgi.multithread'] = False
+        # The following code snippet does not follow PEP8 conventions
+        # but it's formatted the way it is for demonstration purposes
+        # to emphasize the required variables and their values
+        #
+        # Required WSGI variables
+        env['wsgi.version']      = (1, 0)
+        env['wsgi.url_scheme']   = 'http'
+        env['wsgi.input']        = io.StringIO(self.request_data)
+        env['wsgi.errors']       = sys.stderr
+        env['wsgi.multithread']  = False
         env['wsgi.multiprocess'] = False
-        env['wsgi.run_once'] = False
-
-        # required CGI variables
-        env['REQUEST_METHOD'] = self.request_method # GET
-        env['PATH_INFO'] = self.path    # /hello
-        env['SERVER_NAME'] = self.server_name   # localhost
-        env['SERVER_PORT'] = str(self.server_port)  # 8888
-
+        env['wsgi.run_once']     = False
+        # Required CGI variables
+        env['REQUEST_METHOD']    = self.request_method    # GET
+        env['PATH_INFO']         = self.path              # /hello
+        env['SERVER_NAME']       = self.server_name       # localhost
+        env['SERVER_PORT']       = str(self.server_port)  # 8888
         return env
     
 
     def start_response(self, status, response_headers, exc_info=None):
-        # add nec. server headers
+        # Add necessary server headers
         server_headers = [
-            ('Date', 'Tue, 29 July 00:00:00 GMT'),
+            ('Date', 'Mon, 15 Jul 2019 5:54:48 GMT'),
             ('Server', 'WSGIServer 0.2'),
         ]
 
         self.headers_set = [status, response_headers + server_headers]
-        
-        # to adhere to WSGI specification the start_response must return a 'write' callable
+        # To adhere to WSGI specification the start_response must return
+        # a 'write' callable. We simplicity's sake we'll ignore that detail
+        # for now.
         # return self.finish_response
-    
-    
+
     def finish_response(self, result):
         try:
             status, response_headers = self.headers_set
@@ -123,8 +117,8 @@ class WSGIServer(object):
             response += '\r\n'
             for data in result:
                 response += data.decode('utf-8')
-            # print formatted response data
-            print(''. join(
+            # Print formatted response data a la 'curl -v'
+            print(''.join(
                 f'> {line}\n' for line in response.splitlines()
             ))
             response_bytes = response.encode()
@@ -135,19 +129,20 @@ class WSGIServer(object):
 
 SERVER_ADDRESS = (HOST, PORT) = '', 8888
 
-def create_server(server_address, app):
+
+def make_server(server_address, application):
     server = WSGIServer(server_address)
-    server.set_app(app)
+    server.set_app(application)
     return server
 
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        sys.exit('Provide a WSGI app object as module:callable')
+        sys.exit('Provide a WSGI application object as module:callable')
     app_path = sys.argv[1]
-    module, app = app_path.split(':')
+    module, application = app_path.split(':')
     module = __import__(module)
-    app = getattr(module, app)
-    httpd = create_server(SERVER_ADDRESS, app)
-    print(f'WSGIServer: Serving HTTP on port {PORT} ... \n')
+    application = getattr(module, application)
+    httpd = make_server(SERVER_ADDRESS, application)
+    print(f'WSGIServer: Serving HTTP on port {PORT} ...\n')
     httpd.serve_forever()
